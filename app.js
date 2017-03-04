@@ -1,8 +1,5 @@
 "use strict";
 
- var util = require('util')
- console.log(util.inspect(process.env));
-
 // Roon setup
 
 var RoonApi          = require("node-roon-api"),
