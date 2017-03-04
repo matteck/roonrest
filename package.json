@@ -1,0 +1,19 @@
+{
+  "name": "roonrest",
+  "version": "0.0.1",
+  "description": "Roon control plugin with RESTful HTTP interface",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matteck/roonrest.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/matteck/roonrest/issues"
+  },
+  "homepage": "https://github.com/matteck/roonrest#readme"
+}
