@@ -84,6 +84,21 @@ app.get('/', function (req, res) {
   res.send('Roon Rest version ' + process.env.npm_package_version)
 })
 
+app.get('/playpause', function (req, res) {
+  core.services.RoonApiTransport.control(mysettings.zone, 'playpause')
+  res.send('OK')
+})
+
+app.get('/previous', function (req, res) {
+  core.services.RoonApiTransport.control(mysettings.zone, 'previous')
+  res.send('OK')
+})
+
+app.get('/next', function (req, res) {
+  core.services.RoonApiTransport.control(mysettings.zone, 'next')
+  res.send('OK')
+})
+
 app.listen(port, function () {
   console.log('Roon Rest version ' + process.env.npm_package_version + ' started, listening on port ' + port)
 })
