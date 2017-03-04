@@ -11,7 +11,7 @@ var RoonApi          = require("node-roon-api"),
 
 var core;
 var roon = new RoonApi({
-    extension_id:        'us.eckha.keyboard.controller',
+    extension_id:        'roonrest',
     display_name:        'Roon Rest Controller',
     display_version:     process.env.npm_package_version,
     publisher:           'Matthew Eckhaus',
@@ -71,9 +71,6 @@ roon.init_services({
 });
 
 function update_status() {
-  console.log("++++++++++HERE+++++++++")
-  console.log(util.inspect(mysettings.zone))
-  console.log("++++++++++++++++++++++++")
   if (mysettings.zone.name) {
 	  svc_status.set_status("Ready. Attached to " + mysettings.zone.name, false);
   } else {
