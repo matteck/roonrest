@@ -15,5 +15,12 @@
   "bugs": {
     "url": "https://github.com/matteck/roonrest/issues"
   },
+  "dependencies": {
+    "express": "^4.15.0",
+    "node-roon-api": "github:roonlabs/node-roon-api",
+    "node-roon-api-settings": "github:roonlabs/node-roon-api-settings",
+    "node-roon-api-status": "github:roonlabs/node-roon-api-status",
+    "node-roon-api-transport": "github:roonlabs/node-roon-api-transport"
+  },
   "homepage": "https://github.com/matteck/roonrest#readme"
 }
