@@ -1,6 +1,7 @@
 "use strict";
 
  var util = require('util')
+ console.log(util.inspect(process.env));
 
 // Roon setup
 
@@ -13,7 +14,7 @@ var core;
 var roon = new RoonApi({
     extension_id:        'roonrest',
     display_name:        'Roon Rest Controller',
-    display_version:     process.env.npm_package_version,
+    display_version:     '0.1', //process.env.npm_package_version,
     publisher:           'Matthew Eckhaus',
     email:               'contact@roonlabs.com',
     website:             'https://github.com/matteck/roonrest',
