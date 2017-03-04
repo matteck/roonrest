@@ -1,5 +1,7 @@
 "use strict";
 
+ var util = require('util')
+
 // Roon setup
 
 var RoonApi          = require("node-roon-api"),
@@ -11,7 +13,7 @@ var core;
 var roon = new RoonApi({
     extension_id:        'us.eckha.keyboard.controller',
     display_name:        'Roon Rest Controller',
-    display_version:     "0.0.1",
+    display_version:     process.env.npm_package_version,
     publisher:           'Matthew Eckhaus',
     email:               'contact@roonlabs.com',
     website:             'https://github.com/matteck/roonrest',
@@ -56,6 +58,7 @@ var svc_settings = new RoonApiSettings(roon, {
             mysettings = l.values;
             svc_settings.update_settings(l);
             roon.save_config("settings", mysettings);
+            update_status();
         }
     }
 });
@@ -68,7 +71,14 @@ roon.init_services({
 });
 
 function update_status() {
-	svc_status.set_status("Ready to go.", false);
+  console.log("++++++++++HERE+++++++++")
+  console.log(util.inspect(mysettings.zone))
+  console.log("++++++++++++++++++++++++")
+  if (mysettings.zone.name) {
+	  svc_status.set_status("Ready. Attached to " + mysettings.zone.name, false);
+  } else {
+    svc_status.set_status("Loaded. No zone assigned");
+  }
 }
 
 update_status();

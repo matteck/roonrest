@@ -1,6 +1,6 @@
 {
   "name": "roonrest",
-  "version": "0.0.1",
+  "version": "0.0.7",
   "description": "Roon control plugin with RESTful HTTP interface",
   "main": "app.js",
   "scripts": {
