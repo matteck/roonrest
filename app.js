@@ -10,8 +10,8 @@ var RoonApi          = require("node-roon-api"),
 var core;
 var roon = new RoonApi({
     extension_id:        'roonrest',
-    display_name:        'Roon Rest Controller',
-    display_version:     '0.1', //process.env.npm_package_version,
+    display_name:        'Roon Rest Controller X',
+    display_version:     '0.1.1', //process.env.npm_package_version,
     publisher:           'Matthew Eckhaus',
     email:               'contact@roonlabs.com',
     website:             'https://github.com/matteck/roonrest',
@@ -85,23 +85,20 @@ var port = 3000
 var express = require('express')
 var app = express()
 
+// Control actions https://roonlabs.github.io/node-roon-api-transport/RoonApiTransport.html
+app.get('/:action(play|pause|playpause|stop|prevous|next)', function (req, res) {
+  if (core == undefined) {
+res.status('503').send("<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>\nThe RoonRest extension is not enabled. Please enable it in Roon settings and try again.\n</pre>\n</body>");
+  } else {
+    var action = req.params['action'];
+    console.log('action is ' + action);
+    core.services.RoonApiTransport.control(mysettings.zone, action);
+    res.send('OK');
+  }
+})
+
 app.get('/', function (req, res) {
   res.send('Roon Rest version ' + process.env.npm_package_version)
-})
-
-app.get('/playpause', function (req, res) {
-  core.services.RoonApiTransport.control(mysettings.zone, 'playpause')
-  res.send('OK')
-})
-
-app.get('/previous', function (req, res) {
-  core.services.RoonApiTransport.control(mysettings.zone, 'previous')
-  res.send('OK')
-})
-
-app.get('/next', function (req, res) {
-  core.services.RoonApiTransport.control(mysettings.zone, 'next')
-  res.send('OK')
 })
 
 app.listen(port, function () {
