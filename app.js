@@ -2,7 +2,7 @@
 
 // Roon setup
 
-var RoonApi          = require("node-roon-api"),
+var RoonApi        = require("node-roon-api"),
   RoonApiSettings  = require('node-roon-api-settings'),
   RoonApiStatus    = require('node-roon-api-status'),
   RoonApiTransport = require('node-roon-api-transport');
@@ -10,7 +10,7 @@ var RoonApi          = require("node-roon-api"),
 var core;
 var roon = new RoonApi({
     extension_id:        'roonrest',
-    display_name:        'Roon Rest Controller X',
+    display_name:        'Roon Rest Controller',
     display_version:     '0.1.1', //process.env.npm_package_version,
     publisher:           'Matthew Eckhaus',
     email:               'contact@roonlabs.com',
@@ -86,9 +86,9 @@ var express = require('express')
 var app = express()
 
 // Control actions https://roonlabs.github.io/node-roon-api-transport/RoonApiTransport.html
-app.get('/:action(play|pause|playpause|stop|prevous|next)', function (req, res) {
+app.get('/api/v1/control/:action(play|pause|playpause|stop|prevous|next)', function (req, res) {
   if (core == undefined) {
-res.status('503').send("<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>\nThe RoonRest extension is not enabled. Please enable it in Roon settings and try again.\n</pre>\n</body>");
+res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
   } else {
     var action = req.params['action'];
     console.log('action is ' + action);
@@ -97,10 +97,10 @@ res.status('503').send("<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset
   }
 })
 
-app.get('/', function (req, res) {
-  res.send('Roon Rest version ' + process.env.npm_package_version)
+app.get('/api/v1', function (req, res) {
+  res.send('RoonRest extensions v1')
 })
 
 app.listen(port, function () {
-  console.log('Roon Rest version ' + process.env.npm_package_version + ' started, listening on port ' + port)
+  console.log('RoonRest extension started, listening on port ' + port)
 })
