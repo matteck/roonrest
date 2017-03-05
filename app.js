@@ -86,7 +86,7 @@ var express = require('express')
 var app = express()
 
 // Control actions https://roonlabs.github.io/node-roon-api-transport/RoonApiTransport.html
-app.get('/api/v1/control/:action(play|pause|playpause|stop|prevous|next)', function (req, res) {
+app.get('/api/v1/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
   if (core == undefined) {
 res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
   } else {
