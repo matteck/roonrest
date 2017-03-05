@@ -1,11 +1,11 @@
 {
   "name": "roonrest",
-  "version": "0.0.8",
+  "version": "0.1.0",
   "description": "Roon control plugin with RESTful HTTP interface",
-  "main": "app.js",
+  "main": "roonrest.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app.js"
+    "start": "node roonrest.js"
   },
   "repository": {
     "type": "git",

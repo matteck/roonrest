@@ -1,5 +1,8 @@
 "use strict";
 
+var pjson = require('./package.json');
+var package_version = pjson.version; //process.env.npm_package_version does not work under forever
+
 // Roon setup
 
 var RoonApi        = require("node-roon-api"),
@@ -11,7 +14,7 @@ var core;
 var roon = new RoonApi({
     extension_id:        'roonrest',
     display_name:        'Roon Rest Controller',
-    display_version:     '0.1.1', //process.env.npm_package_version,
+    display_version:     package_version,
     publisher:           'Matthew Eckhaus',
     email:               'contact@roonlabs.com',
     website:             'https://github.com/matteck/roonrest',
@@ -85,10 +88,10 @@ var port = 3000
 var express = require('express')
 var app = express()
 
-// Control actions https://roonlabs.github.io/node-roon-api-transport/RoonApiTransport.html
-app.get('/api/v1/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
+// Zone-specific control actions
+app.get('/api/v1/zone/current/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
   if (core == undefined) {
-res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
+    res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
   } else {
     var action = req.params['action'];
     console.log('action is ' + action);
@@ -96,6 +99,30 @@ res.status('503').send("The RoonRest extension is not enabled. Please enable it 
     res.send('OK');
   }
 })
+
+// Universal control actions
+app.get('/api/v1/zone/all/control/pause', function (req, res) {
+  if (core == undefined) {
+    res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
+  } else {
+    console.log('Doing pause_all');
+    core.services.RoonApiTransport.pause_all();
+    res.send('OK');
+  }
+})
+
+app.get('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
+  if (core == undefined) {
+    res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
+  } else {
+    console.log('Doing set ' + req.params['name'] + ' to ' + req.params['value']);
+    var settings_object = {};
+    settings_object[req.params['name']] = ((req.params['value'] == 'on') ? 1 : 0 );
+    core.services.RoonApiTransport.change_settings(mysettings.zone, settings_object);
+    res.send('OK');
+  }
+})
+
 
 app.get('/api/v1', function (req, res) {
   res.send('RoonRest extensions v1')
