@@ -96,7 +96,7 @@ var app = express()
 var not_registered_error = "The RoonRest extension is not enabled. Please enable it in Roon settings and try again.";
 
 // Zone-specific control actions
-app.get('/api/v1/zone/current/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
+app.put('/api/v1/zone/current/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
   if (core == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -108,7 +108,7 @@ app.get('/api/v1/zone/current/control/:action(play|pause|playpause|stop|previous
 })
 
 // Universal control actions
-app.get('/api/v1/zone/all/control/pause', function (req, res) {
+app.put('/api/v1/zone/all/control/pause', function (req, res) {
   if (core == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -118,7 +118,7 @@ app.get('/api/v1/zone/all/control/pause', function (req, res) {
   }
 })
 
-app.get('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
+app.put('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
   if (core == undefined) {
     res.status('503').send(not_registered_error);
   } else {
