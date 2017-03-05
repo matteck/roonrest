@@ -1,3 +1,8 @@
+// TODO:
+// - Check success of Roon API calls
+// - Volume control
+// - Seek
+
 "use strict";
 
 var pjson = require('./package.json');
@@ -23,7 +28,7 @@ var roon = new RoonApi({
         core = core_;
     },
     core_unpaired: function(core_) {
-	core = undefined;
+	      core = undefined;
     }
 });
 
@@ -88,10 +93,12 @@ var port = 3000
 var express = require('express')
 var app = express()
 
+var not_registered_error = "The RoonRest extension is not enabled. Please enable it in Roon settings and try again.";
+
 // Zone-specific control actions
 app.get('/api/v1/zone/current/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
   if (core == undefined) {
-    res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
+    res.status('503').send(not_registered_error);
   } else {
     var action = req.params['action'];
     console.log('action is ' + action);
@@ -103,7 +110,7 @@ app.get('/api/v1/zone/current/control/:action(play|pause|playpause|stop|previous
 // Universal control actions
 app.get('/api/v1/zone/all/control/pause', function (req, res) {
   if (core == undefined) {
-    res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
+    res.status('503').send(not_registered_error);
   } else {
     console.log('Doing pause_all');
     core.services.RoonApiTransport.pause_all();
@@ -113,7 +120,7 @@ app.get('/api/v1/zone/all/control/pause', function (req, res) {
 
 app.get('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
   if (core == undefined) {
-    res.status('503').send("The RoonRest extension is not enabled. Please enable it in Roon settings and try again.");
+    res.status('503').send(not_registered_error);
   } else {
     console.log('Doing set ' + req.params['name'] + ' to ' + req.params['value']);
     var settings_object = {};
