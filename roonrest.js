@@ -3,6 +3,8 @@
 // - Volume control
 // - Seek
 
+// Parts of this code are copied from https://github.com/RoonLabs/roon-extension-powermate
+
 "use strict";
 
 var pjson = require('./package.json');
@@ -124,7 +126,12 @@ app.put('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)'
   } else {
     console.log('Doing set ' + req.params['name'] + ' to ' + req.params['value']);
     var settings_object = {};
-    settings_object[req.params['name']] = ((req.params['value'] == 'on') ? 1 : 0 );
+    var setting_name = req.params['name']
+    if (req.params['value'] == 'on') {
+      settings_object[setting_name] = 1;
+    } else {
+      settings_object[setting_name] = 0;
+    }
     core.services.RoonApiTransport.change_settings(mysettings.zone, settings_object);
     res.send('OK');
   }
