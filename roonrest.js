@@ -79,7 +79,7 @@ roon.init_services({
 });
 
 function update_status() {
-  if (mysettings.zone.name) {
+  if (mysettings.hasOwnProperty("zone") && mysettings.zone != null && mysettings.zone.hasOwnProperty("name")) {
 	  svc_status.set_status("Ready. Attached to " + mysettings.zone.name, false);
   } else {
     svc_status.set_status("Loaded. No zone assigned");
@@ -120,6 +120,7 @@ app.put('/api/v1/zone/all/control/pause', function (req, res) {
   }
 })
 
+// Settings
 app.put('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
   if (core == undefined) {
     res.status('503').send(not_registered_error);
@@ -137,6 +138,18 @@ app.put('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)'
   }
 })
 
+// Volume
+app.put('/api/v1/zone/current/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
+  if (core == undefined) {
+    res.status('503').send(not_registered_error);
+  } else {
+    var how = req.params['how'];
+    var value = req.params['value']
+    console.log('volume how is ' + how);
+    core.services.RoonApiTransport.change_volume(mysettings.zone, how, value);
+    res.send('OK');
+  }
+})
 
 app.get('/api/v1', function (req, res) {
   res.send('RoonRest extensions v1')
