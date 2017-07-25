@@ -12,75 +12,90 @@ var package_version = pjson.version; //process.env.npm_package_version does not 
 
 // Roon setup
 
-var RoonApi        = require("node-roon-api"),
-  RoonApiSettings  = require('node-roon-api-settings'),
-  RoonApiStatus    = require('node-roon-api-status'),
+var RoonApi = require("node-roon-api"),
+  RoonApiSettings = require('node-roon-api-settings'),
+  RoonApiStatus = require('node-roon-api-status'),
   RoonApiTransport = require('node-roon-api-transport');
 
 var core;
-var roon = new RoonApi({
-    extension_id:        'roonrest',
-    display_name:        'Roon Rest Controller',
-    display_version:     package_version,
-    publisher:           'Matthew Eckhaus',
-    email:               'contact@roonlabs.com',
-    website:             'https://github.com/matteck/roonrest',
+var zones = [];
 
-    core_paired: function(core_) {
-        core = core_;
-    },
-    core_unpaired: function(core_) {
-	      core = undefined;
-    }
+var roon = new RoonApi({
+  extension_id: 'roonrest',
+  display_name: 'Roon Rest Controller',
+  display_version: package_version,
+  publisher: 'Matthew Eckhaus',
+  email: 'contact@roonlabs.com',
+  website: 'https://github.com/matteck/roonrest',
+
+  core_paired: function (core_) {
+    core = core_;
+
+    core.services.RoonApiTransport.subscribe_zones((response, msg) => {
+      if (response == "Subscribed") {
+        let curZones = msg.zones.reduce((p, e) => (p[e.zone_id] = e) && p, {});
+        zones = curZones;
+      } else if (response == "Changed") {
+        var z;
+        if (msg.zones_removed) msg.zones_removed.forEach(e => delete (zones[e.zone_id]));
+        if (msg.zones_added) msg.zones_added.forEach(e => zones[e.zone_id] = e);
+        if (msg.zones_changed) msg.zones_changed.forEach(e => zones[e.zone_id] = e);
+      }
+    });
+
+  },
+  core_unpaired: function (core_) {
+    core = undefined;
+  }
 });
 
 var mysettings = roon.load_config("settings") || {
-    zone:             null,
+  zone: null,
 };
 
 function makelayout(settings) {
-    var l = {
-        values:    settings,
-        layout:    [],
-        has_error: false
-    };
+  var l = {
+    values: settings,
+    layout: [],
+    has_error: false
+  };
 
   l.layout.push({
-	type:    "zone",
-	title:   "Zone",
-	setting: "zone",
-    });
+    type: "zone",
+    title: "Zone",
+    setting: "zone",
+  });
 
-    return l;
+  return l;
 }
 
 var svc_settings = new RoonApiSettings(roon, {
-    get_settings: function(cb) {
-        cb(makelayout(mysettings));
-    },
-    save_settings: function(req, isdryrun, settings) {
-	let l = makelayout(settings.values);
-        req.send_complete(l.has_error ? "NotValid" : "Success", { settings: l });
+  get_settings: function (cb) {
+    cb(makelayout(mysettings));
+  },
+  save_settings: function (req, isdryrun, settings) {
+    let l = makelayout(settings.values);
+    req.send_complete(l.has_error ? "NotValid" : "Success", { settings: l });
 
-        if (!isdryrun && !l.has_error) {
-            mysettings = l.values;
-            svc_settings.update_settings(l);
-            roon.save_config("settings", mysettings);
-            update_status();
-        }
+    if (!isdryrun && !l.has_error) {
+      mysettings = l.values;
+      svc_settings.update_settings(l);
+      roon.save_config("settings", mysettings);
+      update_status();
     }
+  }
 });
 
 var svc_status = new RoonApiStatus(roon);
 
 roon.init_services({
-    required_services:   [ RoonApiTransport ],
-    provided_services:   [ svc_settings, svc_status ],
+  required_services: [RoonApiTransport],
+  provided_services: [svc_settings, svc_status],
 });
 
 function update_status() {
   if (mysettings.hasOwnProperty("zone") && mysettings.zone != null && mysettings.zone.hasOwnProperty("name")) {
-	  svc_status.set_status("Ready. Attached to " + mysettings.zone.name, false);
+    svc_status.set_status("Ready. Attached to " + mysettings.zone.name, false);
   } else {
     svc_status.set_status("Loaded. No zone assigned");
   }
@@ -153,6 +168,10 @@ app.put('/api/v1/zone/current/volume/:how(absolute|relative|relative_step)/:valu
 
 app.get('/api/v1', function (req, res) {
   res.send('RoonRest extensions v1')
+})
+
+app.get('/api/v1/zones', function (req, res) {
+  res.send(zones);
 })
 
 app.listen(port, function () {
