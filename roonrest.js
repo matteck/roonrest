@@ -101,12 +101,14 @@ async function screenblank() {
     return;
   }
   // Hack - Zone state doesn't update immediately
-  await sleep(500);
+  await sleep(250);
   var roon_state = zones[local_zone]['state'];
   var xset = "/usr/bin/xset -display :0.0";
   var timeout = "600";
   const { exec } = require('child_process');
-  exec(xset + ' q', (err, xsetout, stderr) => {
+  var cmd = xset + ' q';
+  console.log('Doing ' + cmd)
+  exec(cmd, (err, xsetout, stderr) => {
     if (err) {
       console.log("xset q failed");
       console.log(stderr);
@@ -114,7 +116,7 @@ async function screenblank() {
     } else {
       var found = xsetout.match(/Standby:\s+\d+\s+Suspend:\s+\d+\s+Off:\s+(\d+)/);
       if (found[1] != timeout) {
-        exec(xset + ' dpms ' + timeout + ' ' + timeout + ' ' + timeout, (err, xsetout, stderr) => {
+        exec(xset + ' dpms ' + timeout + ' ' + timeout + ' ' + timeout, (err, stdout, stderr) => {
           if (err) {
             console.log("xset dpms timeout failed");
             console.log(stderr);
@@ -126,31 +128,34 @@ async function screenblank() {
       var dpms_state = found[1];
       console.log(roon_state + ' / ' + dpms_state);
       if (roon_state == "paused" && dpms_state == "Disabled") {
-        exec(xset + ' +dpms', (err, xsetout, stderr) => {
+        var cmd = xset + ' +dpms';
+        console.log('Doing ' + cmd)
+        exec(cmd, (err, stdout, stderr) => {
           if (err) {
             console.log("xset +dpms failed");
             console.log(stderr);
             return;
           }
         });
-
-
-
       } else if (roon_state == "playing" && dpms_state == "Enabled") {
-        exec(xset + ' -dpms', (err, xsetout, stderr) => {
+        var cmd = xset + ' -dpms';
+        console.log('Doing ' + cmd)
+        exec(cmd, (err, stdout, stderr) => {
           if (err) {
             console.log("xset -dpms failed");
             console.log(stderr);
             return;
           }
         });
-        exec(xset + ' dpms force on', (err, xsetout, stderr) => {
-          if (err) {
-            console.log("xset dpms force on failed");
-            console.log(stderr);
-            return;
-          }
-        });
+        // cmd = xset + ' dpms force on';
+        // console.log('Doing ' + cmd)
+        // exec(cmd, (err, stdout, stderr) => {
+        //   if (err) {
+        //     console.log("xset dpms force on failed");
+        //     console.log(stderr);
+        //     return;
+        //   }
+        // });
       }
     }
   });
