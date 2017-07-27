@@ -114,29 +114,33 @@ async function screenblank() {
       console.log(stderr);
       return;
     } else {
-      var found = xsetout.match(/Standby:\s+\d+\s+Suspend:\s+\d+\s+Off:\s+(\d+)/);
-      if (found[1] != timeout) {
-        exec(xset + ' dpms ' + timeout + ' ' + timeout + ' ' + timeout, (err, stdout, stderr) => {
-          if (err) {
-            console.log("xset dpms timeout failed");
-            console.log(stderr);
-            return;
-          }
-        });
-      }
       var found = xsetout.match(/DPMS is (\w+)/);
       var dpms_state = found[1];
-      console.log(roon_state + ' / ' + dpms_state);
-      if (roon_state == "paused" && dpms_state == "Disabled") {
-        var cmd = xset + ' +dpms';
-        console.log('Doing ' + cmd)
-        exec(cmd, (err, stdout, stderr) => {
-          if (err) {
-            console.log("xset +dpms failed");
-            console.log(stderr);
-            return;
-          }
-        });
+      if (roon_state == "paused") {
+        if (dpms_state == "Disabled") {
+          var cmd = xset + ' +dpms';
+          console.log('Doing ' + cmd)
+          exec(cmd, (err, stdout, stderr) => {
+            if (err) {
+              console.log("xset +dpms failed");
+              console.log(stderr);
+              return;
+            }
+          });
+        }
+        // DPMS is on, make sure it has the right timeout
+        var found = xsetout.match(/Standby:\s+\d+\s+Suspend:\s+\d+\s+Off:\s+(\d+)/);
+        if (found[1] != timeout) {
+          var cmd = xset + ' dpms ' + timeout + ' ' + timeout + ' ' + timeout;
+          console.log('Doing ' + cmd);
+          exec(cmd, (err, stdout, stderr) => {
+            if (err) {
+              console.log("xset dpms timeout failed");
+              console.log(stderr);
+              return;
+            }
+          });
+        }
       } else if (roon_state == "playing" && dpms_state == "Enabled") {
         var cmd = xset + ' -dpms';
         console.log('Doing ' + cmd)
@@ -147,15 +151,6 @@ async function screenblank() {
             return;
           }
         });
-        // cmd = xset + ' dpms force on';
-        // console.log('Doing ' + cmd)
-        // exec(cmd, (err, stdout, stderr) => {
-        //   if (err) {
-        //     console.log("xset dpms force on failed");
-        //     console.log(stderr);
-        //     return;
-        //   }
-        // });
       }
     }
   });
