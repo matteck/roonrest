@@ -118,6 +118,7 @@ app.put('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|n
     res.status('503').send(not_registered_error);
   } else {
     var action = req.params['action'];
+    console.log('Doing action ' + action)
     let this_zone = null;
     if (req.params['zone'] == 'current')
       this_zone = mysettings.zone;
