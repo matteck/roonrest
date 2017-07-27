@@ -88,6 +88,16 @@ var svc_settings = new RoonApiSettings(roon, {
 
 var svc_status = new RoonApiStatus(roon);
 
+function screenblank() {
+  // Sets dpms
+  const { exec } = require('child_process');
+  exec('./screenblank.py', (err, stdout, stderr) => {
+  if (err) {
+    console.log("Screenblank failed");
+    return;
+  }
+});
+}
 roon.init_services({
   required_services: [RoonApiTransport],
   provided_services: [svc_settings, svc_status],
@@ -118,7 +128,7 @@ app.put('/api/v1/zone/all/control/:action(pause)', function (req, res) {
     res.status('503').send(not_registered_error);
   } else {
     console.log('Doing pause_all');
-    core.services.RoonApiTransport.pause_all();
+    core.services.RoonApiTransport.pause_all(screenblank);
     res.send('OK');
   }
 })
@@ -138,7 +148,7 @@ app.put('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|n
     if (this_zone == null) {
       res.status('404').send();
     }
-    core.services.RoonApiTransport.control(this_zone, action);
+    core.services.RoonApiTransport.control(this_zone, action, screenblank);
     res.send('OK');
   }
 })
