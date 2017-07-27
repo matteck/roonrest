@@ -10,6 +10,8 @@
 var pjson = require('./package.json');
 var package_version = pjson.version; //process.env.npm_package_version does not work under forever
 
+var local_zone = '16015eda3fbd0e21524b9e67274de700f4ff' // zone id which runs on the local server, for screen control
+
 // Roon setup
 
 var RoonApi = require("node-roon-api"),
@@ -88,16 +90,72 @@ var svc_settings = new RoonApiSettings(roon, {
 
 var svc_status = new RoonApiStatus(roon);
 
-function screenblank() {
-  // Sets dpms
-  const { exec } = require('child_process');
-  exec('./screenblank.py', (err, stdout, stderr) => {
-  if (err) {
-    console.log("Screenblank failed");
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function screenblank() {
+  // Update dpms settings whenever play state changes on local machine
+  // It's easier to check the state directly than trying to guess based on the action
+  if (!local_zone) {
     return;
   }
-});
+  // Hack - Zone state doesn't update immediately
+  await sleep(500);
+  var roon_state = zones[local_zone]['state'];
+  var xset = "/usr/bin/xset -display :0.0";
+  var timeout = "600";
+  const { exec } = require('child_process');
+  exec(xset + ' q', (err, xsetout, stderr) => {
+    if (err) {
+      console.log("xset q failed");
+      console.log(stderr);
+      return;
+    } else {
+      var found = xsetout.match(/Standby:\s+\d+\s+Suspend:\s+\d+\s+Off:\s+(\d+)/);
+      if (found[1] != timeout) {
+        exec(xset + ' dpms ' + timeout + ' ' + timeout + ' ' + timeout, (err, xsetout, stderr) => {
+          if (err) {
+            console.log("xset dpms timeout failed");
+            console.log(stderr);
+            return;
+          }
+        });
+      }
+      var found = xsetout.match(/DPMS is (\w+)/);
+      var dpms_state = found[1];
+      console.log(roon_state + ' / ' + dpms_state);
+      if (roon_state == "paused" && dpms_state == "Disabled") {
+        exec(xset + ' +dpms', (err, xsetout, stderr) => {
+          if (err) {
+            console.log("xset +dpms failed");
+            console.log(stderr);
+            return;
+          }
+        });
+
+
+
+      } else if (roon_state == "playing" && dpms_state == "Enabled") {
+        exec(xset + ' -dpms', (err, xsetout, stderr) => {
+          if (err) {
+            console.log("xset -dpms failed");
+            console.log(stderr);
+            return;
+          }
+        });
+        exec(xset + ' dpms force on', (err, xsetout, stderr) => {
+          if (err) {
+            console.log("xset dpms force on failed");
+            console.log(stderr);
+            return;
+          }
+        });
+      }
+    }
+  });
 }
+
 roon.init_services({
   required_services: [RoonApiTransport],
   provided_services: [svc_settings, svc_status],
@@ -195,6 +253,11 @@ app.get('/api/v1', function (req, res) {
 
 app.get('/api/v1/zones', function (req, res) {
   res.send(zones);
+})
+
+app.put('/api/v1/updatescreen', function (req, res) {
+  screenblank();
+  res.send('OK');
 })
 
 app.listen(port, function () {

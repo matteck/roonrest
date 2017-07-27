@@ -3,7 +3,9 @@ import evdev
 import select
 import requests
 
-base_url = "http://roonstation:3000/api/v1"
+BASE_URL = "http://localhost:3000/api/v1"
+ZONE = "current" # Use "current" for zone selected in Roon settings
+
 devices = {}
 for fn in evdev.list_devices():
     dev = evdev.InputDevice(fn)
@@ -28,22 +30,22 @@ while True:
                 print(code, state)
                 if state == "DOWN":
                     if code == "PLAYPAUSE":
-                        url = "%s/zone/current/control/playpause" % base_url
+                        url = "%s/zone/current/control/playpause" % BASE_URL
                     elif code == "STOP":
-                        url = "%s/zone/all/control/pause" % base_url
+                        url = "%s/zone/all/control/pause" % BASE_URL
                     elif code == "REWIND":
-                        url = "%s/zone/current/control/previous" % base_url
+                        url = "%s/zone/current/control/previous" % BASE_URL
                     elif code == "FASTFORWARD":
-                        url = "%s/zone/current/control/next" % base_url
+                        url = "%s/zone/current/control/next" % BASE_URL
                     elif code == "UP":
-                        url = "%s/zone/current/volume/relative_step/1" % base_url
+                        url = "%s/zone/current/volume/relative_step/1" % BASE_URL
                     elif code == "DOWN":
-                        url = "%s/zone/current/volume/relative_step/-1" % base_url
+                        url = "%s/zone/current/volume/relative_step/-1" % BASE_URL
                 if state == "HOLD":
                     if code == "UP":
-                        url = "%s/zone/current/volume/relative_step/1" % base_url
+                        url = "%s/zone/current/volume/relative_step/1" % BASE_URL
                     elif code == "DOWN":
-                        url = "%s/zone/current/volume/relative_step/-1" % base_url
+                        url = "%s/zone/current/volume/relative_step/-1" % BASE_URL
             if url:
                 print(url)
                 try:

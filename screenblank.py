@@ -1,10 +1,10 @@
-#!env python3
+#!/usr/bin/env python3
 
 import requests
 import subprocess
 import re
 
-SERVER = "media-pc:3000"
+SERVER = "localhost:3000"
 TIMEOUT = 601
 XSET = "/usr/bin/xset -display :0.0"
 
