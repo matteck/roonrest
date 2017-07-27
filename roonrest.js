@@ -113,13 +113,17 @@ var app = express()
 var not_registered_error = "The RoonRest extension is not enabled. Please enable it in Roon settings and try again.";
 
 // Zone-specific control actions
-app.put('/api/v1/zone/current/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
+app.put('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
   if (core == undefined) {
     res.status('503').send(not_registered_error);
   } else {
     var action = req.params['action'];
-    console.log('action is ' + action);
-    core.services.RoonApiTransport.control(mysettings.zone, action);
+    let this_zone = null;
+    if (req.params['zone'] == 'current')
+      this_zone = mysettings.zone;
+    else
+      this_zone = zones[req.params['zone']];
+    core.services.RoonApiTransport.control(this_zone, action);
     res.send('OK');
   }
 })
@@ -136,7 +140,7 @@ app.put('/api/v1/zone/all/control/pause', function (req, res) {
 })
 
 // Settings
-app.put('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
+app.put('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
   if (core == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -148,13 +152,18 @@ app.put('/api/v1/zone/current/settings/:name(shuffle|auto_radio)/:value(on|off)'
     } else {
       settings_object[setting_name] = 0;
     }
-    core.services.RoonApiTransport.change_settings(mysettings.zone, settings_object);
+    let this_zone = null;
+    if (req.params['zone'] == 'current')
+      this_zone = mysettings.zone;
+    else
+      this_zone = zones[req.params['zone']];
+    core.services.RoonApiTransport.change_settings(this_zone, settings_object);
     res.send('OK');
   }
 })
 
 // Volume
-app.put('/api/v1/zone/current/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
+app.put('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
   if (core == undefined) {
     res.status('503').send(not_registered_error);
   } else {
