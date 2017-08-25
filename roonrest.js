@@ -10,7 +10,7 @@
 var pjson = require('./package.json');
 var package_version = pjson.version; //process.env.npm_package_version does not work under forever
 
-var local_zone = '16015eda3fbd0e21524b9e67274de700f4ff' // zone id which runs on the local server, for screen control
+var local_zone = '1601b2e08b11dfe59f49b0c472a871078257' // zone id which runs on the local server, for screen control
 
 // Roon setup
 
