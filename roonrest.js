@@ -94,66 +94,64 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const child_process = require('child_process');
+function xset_cmd(cmd) {
+  cmd = "/usr/bin/xset -display :0.0 " + cmd;
+  console.log("Doing " + cmd);
+  return child_process.execSync(cmd, { encoding: 'utf-8' });
+}
+
 async function screenblank() {
   // Update dpms settings whenever play state changes on local machine
-  // It's easier to check the state directly than trying to guess based on the action
+  // It's easier to check the state with roon directly than trying to guess based on the action
   if (!local_zone) {
     return;
   }
+  if (!(local_zone in zones)) {
+    console.log("Zone " + local_zone + " not found");
+    return;
+  }
+  var output;
   // Hack - Zone state doesn't update immediately
   await sleep(250);
   var roon_state = zones[local_zone]['state'];
-  var xset = "/usr/bin/xset -display :0.0";
-  var timeout = "600";
-  const { exec } = require('child_process');
-  var cmd = xset + ' q';
-  console.log('Doing ' + cmd)
-  exec(cmd, (err, xsetout, stderr) => {
-    if (err) {
-      console.log("xset q failed");
-      console.log(stderr);
+  console.log("Roon is " + roon_state);
+  output = xset_cmd("q");
+  var found = output.match(/DPMS is (\w+)/);
+  if (!(1 in found)) {
+    console.log("DPMS state not found in cmd output:\n" + output);
+    return;
+  }
+  var dpms_state = found[1];
+  if (dpms_state == "Disabled") {
+    xset_cmd("+dpms");
+    output = xset_cmd("q");
+    var found = output.match(/DPMS is (\w+)/);
+    if (!(1 in found)) {
+      console.log("DPMS state not found in cmd output:\n" + output);
       return;
-    } else {
-      var found = xsetout.match(/DPMS is (\w+)/);
-      var dpms_state = found[1];
-      if (roon_state == "paused") {
-        if (dpms_state == "Disabled") {
-          var cmd = xset + ' +dpms';
-          console.log('Doing ' + cmd)
-          exec(cmd, (err, stdout, stderr) => {
-            if (err) {
-              console.log("xset +dpms failed");
-              console.log(stderr);
-              return;
-            }
-          });
-        }
-        // DPMS is on, make sure it has the right timeout
-        var found = xsetout.match(/Standby:\s+\d+\s+Suspend:\s+\d+\s+Off:\s+(\d+)/);
-        if (found[1] != timeout) {
-          var cmd = xset + ' dpms ' + timeout + ' ' + timeout + ' ' + timeout;
-          console.log('Doing ' + cmd);
-          exec(cmd, (err, stdout, stderr) => {
-            if (err) {
-              console.log("xset dpms timeout failed");
-              console.log(stderr);
-              return;
-            }
-          });
-        }
-      } else if (roon_state == "playing" && dpms_state == "Enabled") {
-        var cmd = xset + ' -dpms';
-        console.log('Doing ' + cmd)
-        exec(cmd, (err, stdout, stderr) => {
-          if (err) {
-            console.log("xset -dpms failed");
-            console.log(stderr);
-            return;
-          }
-        });
-      }
     }
-  });
+    dpms_state = found[1];
+  }
+  found = output.match(/Monitor is (\w+)/);
+  var monitor_state = found[1];
+  found = output.match(/Standby:\s+(\d+)\s+Suspend:\s+(\d+)\s+Off:\s+(\d+)/);
+  var desired_timeout;
+  if (roon_state == "playing") {
+    if (monitor_state == "Off") {
+      xset_cmd("dpms force on");
+    }
+    desired_timeout = '34463'; // Max
+  } else {
+    console.log("Here 56");
+    desired_timeout = '300';
+  }
+  for (var i = 1; i < 4; i++) {
+    if (found[i] != desired_timeout) {
+      xset_cmd("dpms " + desired_timeout + " " + desired_timeout + " " + desired_timeout);
+      break;
+    }
+  }
 }
 
 roon.init_services({
