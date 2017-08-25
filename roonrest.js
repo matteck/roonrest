@@ -143,7 +143,6 @@ async function screenblank() {
     }
     desired_timeout = '34463'; // Max
   } else {
-    console.log("Here 56");
     desired_timeout = '300';
   }
   for (var i = 1; i < 4; i++) {
