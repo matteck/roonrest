@@ -17,7 +17,7 @@
     "url": "https://github.com/matteck/roonrest/issues"
   },
   "dependencies": {
-    "express": ">=4.15.3",
+    "express": "^4.16.1",
     "node-roon-api": "github:roonlabs/node-roon-api",
     "node-roon-api-settings": "github:roonlabs/node-roon-api-settings",
     "node-roon-api-status": "github:roonlabs/node-roon-api-status",

@@ -10,7 +10,9 @@
 var pjson = require('./package.json');
 var package_version = pjson.version; //process.env.npm_package_version does not work under forever
 
-var local_zone = '1601b2e08b11dfe59f49b0c472a871078257' // zone id which runs on the local server, for screen control
+// zone id which runs on the raspberry pi with the display screen
+// not running on the pi with the screen any more
+var screen_zone = ''
 
 // Roon setup
 
