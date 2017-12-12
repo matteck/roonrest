@@ -106,7 +106,7 @@ function xset_cmd(cmd) {
 async function screenblank() {
   // Update dpms settings whenever play state changes on local machine
   // It's easier to check the state with roon directly than trying to guess based on the action
-  if (!local_zone) {
+  if (!screen_zone) {
     return;
   }
   if (!(local_zone in zones)) {
@@ -185,7 +185,7 @@ app.put('/api/v1/zone/all/control/:action(pause)', function (req, res) {
     res.status('503').send(not_registered_error);
   } else {
     console.log('Doing pause_all');
-    core.services.RoonApiTransport.pause_all(screenblank);
+    core.services.RoonApiTransport.pause_all();
     res.send('OK');
   }
 })
@@ -205,7 +205,7 @@ app.put('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|n
     if (this_zone == null) {
       res.status('404').send();
     }
-    core.services.RoonApiTransport.control(this_zone, action, screenblank);
+    core.services.RoonApiTransport.control(this_zone, action);
     res.send('OK');
   }
 })
