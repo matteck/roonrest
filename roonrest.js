@@ -10,10 +10,6 @@
 var pjson = require('./package.json');
 var package_version = pjson.version; //process.env.npm_package_version does not work under forever
 
-// zone id which runs on the raspberry pi with the display screen
-// not running on the pi with the screen any more
-var screen_zone = ''
-
 // Roon setup
 
 var RoonApi = require("node-roon-api"),
@@ -25,6 +21,7 @@ var core;
 var zones = [];
 
 var roon = new RoonApi({
+  log_level: 'full',
   extension_id: 'roonrest',
   display_name: 'Roon Rest Controller',
   display_version: package_version,
@@ -94,65 +91,6 @@ var svc_status = new RoonApiStatus(roon);
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-const child_process = require('child_process');
-function xset_cmd(cmd) {
-  cmd = "/usr/bin/xset -display :0.0 " + cmd;
-  console.log("Doing " + cmd);
-  return child_process.execSync(cmd, { encoding: 'utf-8' });
-}
-
-async function screenblank() {
-  // Update dpms settings whenever play state changes on local machine
-  // It's easier to check the state with roon directly than trying to guess based on the action
-  if (!screen_zone) {
-    return;
-  }
-  if (!(local_zone in zones)) {
-    console.log("Zone " + local_zone + " not found");
-    return;
-  }
-  var output;
-  // Hack - Zone state doesn't update immediately
-  await sleep(250);
-  var roon_state = zones[local_zone]['state'];
-  console.log("Roon is " + roon_state);
-  output = xset_cmd("q");
-  var found = output.match(/DPMS is (\w+)/);
-  if (!(1 in found)) {
-    console.log("DPMS state not found in cmd output:\n" + output);
-    return;
-  }
-  var dpms_state = found[1];
-  if (dpms_state == "Disabled") {
-    xset_cmd("+dpms");
-    output = xset_cmd("q");
-    var found = output.match(/DPMS is (\w+)/);
-    if (!(1 in found)) {
-      console.log("DPMS state not found in cmd output:\n" + output);
-      return;
-    }
-    dpms_state = found[1];
-  }
-  found = output.match(/Monitor is (\w+)/);
-  var monitor_state = found[1];
-  found = output.match(/Standby:\s+(\d+)\s+Suspend:\s+(\d+)\s+Off:\s+(\d+)/);
-  var desired_timeout;
-  if (roon_state == "playing") {
-    if (monitor_state == "Off") {
-      xset_cmd("dpms force on");
-    }
-    desired_timeout = '34463'; // Max
-  } else {
-    desired_timeout = '300';
-  }
-  for (var i = 1; i < 4; i++) {
-    if (found[i] != desired_timeout) {
-      xset_cmd("dpms " + desired_timeout + " " + desired_timeout + " " + desired_timeout);
-      break;
-    }
-  }
 }
 
 roon.init_services({
@@ -252,11 +190,6 @@ app.get('/api/v1', function (req, res) {
 
 app.get('/api/v1/zones', function (req, res) {
   res.send(zones);
-})
-
-app.put('/api/v1/updatescreen', function (req, res) {
-  screenblank();
-  res.send('OK');
 })
 
 app.listen(port, function () {
