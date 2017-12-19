@@ -25,6 +25,7 @@ var core;
 var zones = [];
 
 var roon = new RoonApi({
+  log_level: 'none',
   extension_id: 'roonrest',
   display_name: 'Roon Rest Controller',
   display_version: package_version,
