@@ -3,7 +3,9 @@
 
 "use strict";
 var debug = require('debug')('roonrest'),
-  default_zone = '',
+  debug_verbose = require('debug')('roonrest:verbose'),
+  not_registered_error = "The RoonRest extension is not enabled. Please enable it in Roon settings and try again.",
+  default_zone = 'Living Room',
   transport,
   zones = [];
 
@@ -12,6 +14,33 @@ var express = require('express'),
   app = express(),
   port = 3000;
 
+function getZoneByNameOrID(arg) {
+  debug("Looking up zone " + arg);
+  if (arg == "default") {
+    if (mysettings.zone) {
+      debug("Using roon settings zone " + mysettings.zone.name);
+      return mysettings.zone;
+    } else if (default_zone) {
+      arg = default_zone;
+      debug("Using hard-coded default zone " + default_zone);
+    } else {
+      debug("No default found");
+      return null;
+    }
+  }
+  if (arg in zones) {
+    return zones[arg];
+  } else {
+    for (var z in zones) {
+      if (arg == zones[z].display_name) {
+        return zones[z];
+      }
+    }
+  }
+  debug("Zone " + arg + " not found");
+  return null;
+}
+
 // Roon
 var RoonApi = require('node-roon-api'),
   RoonApiSettings = require('node-roon-api-settings'),
@@ -19,6 +48,7 @@ var RoonApi = require('node-roon-api'),
   RoonApiTransport = require('node-roon-api-transport');
 
 var roon = new RoonApi({
+  log_level: 'none',
   extension_id: 'roonrest',
   display_name: 'Roon Rest Controller',
   display_version: '0.0.1',
@@ -30,17 +60,28 @@ var roon = new RoonApi({
     transport = core.services.RoonApiTransport;
     transport.subscribe_zones((response, msg) => {
       if (response == "Subscribed") {
+        debug('Subscribed to new core')
         zones = msg.zones.reduce((p, e) => (p[e.zone_id] = e) && p, {});
       } else if (response == "Changed") {
-        if (msg.zones_removed) msg.zones_removed.forEach(e => delete (zones[e.zone_id]));
-        if (msg.zones_added) msg.zones_added.forEach(e => zones[e.zone_id] = e);
-        if (msg.zones_changed) msg.zones_changed.forEach(e => zones[e.zone_id] = e);
+        if (msg.zones_removed) {
+          debug('Removed zone', response, msg);
+          msg.zones_removed.forEach(e => delete (zones[e.zone_id]));
+        }
+        if (msg.zones_added) {
+          msg.zones_added.forEach(e => zones[e.zone_id] = e);
+          debug('Added zone', response, msg);
+        }
+        if (msg.zones_changed) {
+          msg.zones_changed.forEach(e => zones[e.zone_id] = e);
+          debug_verbose('Changed zone', response, msg);
+        }
       }
     });
 
   },
-  core_unpaired: function (core_) {
-    core = undefined;
+  core_unpaired: function (core) {
+    transport = undefined;
+    debug("Core disconnected.")
   }
 });
 
@@ -83,69 +124,6 @@ var svc_settings = new RoonApiSettings(roon, {
 
 var svc_status = new RoonApiStatus(roon);
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-const child_process = require('child_process');
-function xset_cmd(cmd) {
-  cmd = "/usr/bin/xset -display :0.0 " + cmd;
-  console.log("Doing " + cmd);
-  return child_process.execSync(cmd, { encoding: 'utf-8' });
-}
-
-async function screenblank() {
-  // Update dpms settings whenever play state changes on local machine
-  // It's easier to check the state with roon directly than trying to guess based on the action
-  if (!screen_zone) {
-    return;
-  }
-  if (!(local_zone in zones)) {
-    console.log("Zone " + local_zone + " not found");
-    return;
-  }
-  var output;
-  // Hack - Zone state doesn't update immediately
-  await sleep(250);
-  var roon_state = zones[local_zone]['state'];
-  console.log("Roon is " + roon_state);
-  output = xset_cmd("q");
-  var found = output.match(/DPMS is (\w+)/);
-  if (!(1 in found)) {
-    console.log("DPMS state not found in cmd output:\n" + output);
-    return;
-  }
-  var dpms_state = found[1];
-  if (dpms_state == "Disabled") {
-    xset_cmd("+dpms");
-    output = xset_cmd("q");
-    var found = output.match(/DPMS is (\w+)/);
-    if (!(1 in found)) {
-      console.log("DPMS state not found in cmd output:\n" + output);
-      return;
-    }
-    dpms_state = found[1];
-  }
-  found = output.match(/Monitor is (\w+)/);
-  var monitor_state = found[1];
-  found = output.match(/Standby:\s+(\d+)\s+Suspend:\s+(\d+)\s+Off:\s+(\d+)/);
-  var desired_timeout;
-  if (roon_state == "playing") {
-    if (monitor_state == "Off") {
-      xset_cmd("dpms force on");
-    }
-    desired_timeout = '34463'; // Max
-  } else {
-    desired_timeout = '300';
-  }
-  for (var i = 1; i < 4; i++) {
-    if (found[i] != desired_timeout) {
-      xset_cmd("dpms " + desired_timeout + " " + desired_timeout + " " + desired_timeout);
-      break;
-    }
-  }
-}
-
 roon.init_services({
   required_services: [RoonApiTransport],
   provided_services: [svc_settings, svc_status],
@@ -153,54 +131,51 @@ roon.init_services({
 
 function update_status() {
   if (mysettings.hasOwnProperty("zone") && mysettings.zone != null && mysettings.zone.hasOwnProperty("name")) {
-    svc_status.set_status("Ready. Attached to " + mysettings.zone.name, false);
+    svc_status.set_status("Ready. Zone assigned: " + mysettings.zone.name, false);
+  } else if (default_zone != undefined){
+    svc_status.set_status("Ready. No zone assigned. Using default zone ", default_zone);
   } else {
-    svc_status.set_status("Loaded. No zone assigned");
+    svc_status.set_status("Ready. No zone assigned.");
   }
 }
 
 update_status();
 roon.start_discovery();
 
-var not_registered_error = "The RoonRest extension is not enabled. Please enable it in Roon settings and try again.";
-
 // Universal control actions
 app.put('/api/v1/zone/all/control/:action(pause)', function (req, res) {
-  if (core == undefined) {
+  if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
-    console.log('Doing pause_all');
-    core.services.RoonApiTransport.pause_all();
+    debug('Doing pause_all');
+    transport.pause_all();
     res.send('OK');
   }
 })
 
 // Zone-specific control actions
 app.put('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
-  if (core == undefined) {
+  if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
     var action = req.params['action'];
-    console.log('Doing action ' + action)
-    let this_zone = null;
-    if (req.params['zone'] == 'current')
-      this_zone = mysettings.zone;
-    else
-      this_zone = zones[req.params['zone']];
+    debug('Doing action ' + action + ' on ' + req.params['zone'])
+    var this_zone = getZoneByNameOrID(req.params['zone']);
     if (this_zone == null) {
       res.status('404').send();
+    } else {
+      transport.control(this_zone, action);
+      res.send('OK');
     }
-    core.services.RoonApiTransport.control(this_zone, action);
-    res.send('OK');
   }
 })
 
 // Settings
 app.put('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
-  if (core == undefined) {
+  if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
-    console.log('Doing set ' + req.params['name'] + ' to ' + req.params['value']);
+    debug('Doing set ' + req.params['name'] + ' to ' + req.params['value']);
     var settings_object = {};
     var setting_name = req.params['name']
     if (req.params['value'] == 'on') {
@@ -210,23 +185,27 @@ app.put('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', 
     }
     let this_zone = null;
     if (req.params['zone'] == 'current')
-      this_zone = mysettings.zone;
+      this_zone = mysettings.zone ? mysettings.zone : default_zone;
     else
       this_zone = zones[req.params['zone']];
-    core.services.RoonApiTransport.change_settings(this_zone, settings_object);
+    this_zone = getZoneByNameOrID(this_zone);
+    if (this_zone == null) {
+      res.status('404').send();
+    }
+    transport.change_settings(this_zone, settings_object);
     res.send('OK');
   }
 })
 
 // Volume
 app.put('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
-  if (core == undefined) {
+  if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
     var how = req.params['how'];
     var value = req.params['value']
-    console.log('volume how is ' + how);
-    core.services.RoonApiTransport.change_volume(mysettings.zone, how, value);
+    debug('volume how is ' + how);
+    transport.change_volume(mysettings.zone, how, value);
     res.send('OK');
   }
 })
@@ -236,14 +215,9 @@ app.get('/api/v1', function (req, res) {
 })
 
 app.get('/api/v1/zones', function (req, res) {
-  res.send(zones);
-})
-
-app.put('/api/v1/updatescreen', function (req, res) {
-  screenblank();
-  res.send('OK');
+  res.send(JSON.stringify(zones, null, 2));
 })
 
 app.listen(port, function () {
-  console.log('RoonRest extension started, listening on port ' + port)
+  debug('RoonRest extension started, listening on port ' + port)
 })
