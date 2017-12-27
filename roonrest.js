@@ -132,7 +132,7 @@ function update_status() {
   if (mysettings.hasOwnProperty("zone") && mysettings.zone != null && mysettings.zone.hasOwnProperty("name")) {
     svc_status.set_status("Ready. Zone assigned: " + mysettings.zone.name, false);
   } else if (default_zone != undefined){
-    svc_status.set_status("Ready. No zone assigned. Using default zone ", default_zone);
+    svc_status.set_status("Ready. No zone assigned. Using default zone " + default_zone);
   } else {
     svc_status.set_status("Ready. No zone assigned.");
   }
