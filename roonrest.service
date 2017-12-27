@@ -7,6 +7,7 @@ SyslogIdentifier=roonrest
 User=matt
 Group=matt
 Environment=NODE_ENV=production
+WorkingDirectory=/home/matt/src/roonrest
 
 [Install]
 WantedBy=multi-user.target
