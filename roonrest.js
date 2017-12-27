@@ -1,5 +1,4 @@
 // Parts of this code are copied from https://github.com/RoonLabs/roon-extension-powermate
-// Parts of this code are copied from https://github.com/varunrandery/roon-remote
 
 "use strict";
 var debug = require('debug')('roonrest'),
