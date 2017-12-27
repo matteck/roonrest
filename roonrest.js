@@ -1,46 +1,37 @@
-// TODO:
-// - Check success of Roon API calls
-// - Volume control
-// - Seek
-
 // Parts of this code are copied from https://github.com/RoonLabs/roon-extension-powermate
+// Parts of this code are copied from https://github.com/varunrandery/roon-remote
 
 "use strict";
+var debug = require('debug')('roonrest'),
+  default_zone = '',
+  transport,
+  zones = [];
 
-var pjson = require('./package.json');
-var package_version = pjson.version; //process.env.npm_package_version does not work under forever
+// Express
+var express = require('express'),
+  app = express(),
+  port = 3000;
 
-// zone id which runs on the raspberry pi with the display screen
-// not running on the pi with the screen any more
-var screen_zone = ''
-
-// Roon setup
-
-var RoonApi = require("node-roon-api"),
+// Roon
+var RoonApi = require('node-roon-api'),
   RoonApiSettings = require('node-roon-api-settings'),
   RoonApiStatus = require('node-roon-api-status'),
   RoonApiTransport = require('node-roon-api-transport');
 
-var core;
-var zones = [];
-
 var roon = new RoonApi({
   extension_id: 'roonrest',
   display_name: 'Roon Rest Controller',
-  display_version: package_version,
+  display_version: '0.0.1',
   publisher: 'Matthew Eckhaus',
-  email: 'contact@roonlabs.com',
+  email: 'matt@eckha.us',
   website: 'https://github.com/matteck/roonrest',
 
-  core_paired: function (core_) {
-    core = core_;
-
-    core.services.RoonApiTransport.subscribe_zones((response, msg) => {
+  core_paired: function (core) {
+    transport = core.services.RoonApiTransport;
+    transport.subscribe_zones((response, msg) => {
       if (response == "Subscribed") {
-        let curZones = msg.zones.reduce((p, e) => (p[e.zone_id] = e) && p, {});
-        zones = curZones;
+        zones = msg.zones.reduce((p, e) => (p[e.zone_id] = e) && p, {});
       } else if (response == "Changed") {
-        var z;
         if (msg.zones_removed) msg.zones_removed.forEach(e => delete (zones[e.zone_id]));
         if (msg.zones_added) msg.zones_added.forEach(e => zones[e.zone_id] = e);
         if (msg.zones_changed) msg.zones_changed.forEach(e => zones[e.zone_id] = e);
@@ -170,12 +161,6 @@ function update_status() {
 
 update_status();
 roon.start_discovery();
-
-// Express
-var port = 3000
-
-var express = require('express')
-var app = express()
 
 var not_registered_error = "The RoonRest extension is not enabled. Please enable it in Roon settings and try again.";
 
