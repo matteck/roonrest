@@ -59,7 +59,7 @@ var roon = new RoonApi({
     transport = core.services.RoonApiTransport;
     transport.subscribe_zones((response, msg) => {
       if (response == "Subscribed") {
-        debug('Subscribed to new core')
+        debug('Subscribed to new core');
         zones = msg.zones.reduce((p, e) => (p[e.zone_id] = e) && p, {});
       } else if (response == "Changed") {
         if (msg.zones_removed) {
@@ -142,7 +142,7 @@ update_status();
 roon.start_discovery();
 
 // Universal control actions
-app.put('/api/v1/zone/all/control/:action(pause)', function (req, res) {
+app.get('/api/v1/zone/all/control/:action(pause)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -153,7 +153,7 @@ app.put('/api/v1/zone/all/control/:action(pause)', function (req, res) {
 })
 
 // Zone-specific control actions
-app.put('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
+app.get('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -164,13 +164,14 @@ app.put('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|n
       res.status('404').send();
     } else {
       transport.control(this_zone, action);
+      console.log('Did ' + action + ' on ' + req.params['zone']);
       res.send('OK');
     }
   }
 })
 
 // Settings
-app.put('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
+app.get('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -197,14 +198,16 @@ app.put('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', 
 })
 
 // Volume
-app.put('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
+app.get('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
     var how = req.params['how'];
     var value = req.params['value']
+    var this_zone = getZoneByNameOrID(req.params['zone']);
+    var this_output = this_zone['outputs'][0]['output_id']
     debug('volume how is ' + how);
-    transport.change_volume(mysettings.zone, how, value);
+    transport.change_volume(this_output, how, value);
     res.send('OK');
   }
 })
