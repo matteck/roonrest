@@ -4,7 +4,7 @@
 var debug = require('debug')('roonrest'),
   debug_verbose = require('debug')('roonrest:verbose'),
   not_registered_error = "The RoonRest extension is not enabled. Please enable it in Roon settings and try again.",
-  default_zone = 'Living Room',
+  default_zone_name = 'Hifi',
   transport,
   zones = [];
 
@@ -14,14 +14,15 @@ var express = require('express'),
   port = 3000;
 
 function getZoneByNameOrID(arg) {
+  // If arg is "default" or "current" then find the best default zone
   debug("Looking up zone " + arg);
-  if (arg == "default") {
+  if (arg == "default" || arg == "current") {
     if (mysettings.zone) {
       debug("Using roon settings zone " + mysettings.zone.name);
       return mysettings.zone;
-    } else if (default_zone) {
-      arg = default_zone;
-      debug("Using hard-coded default zone " + default_zone);
+    } else if (default_zone_name) {
+      arg = default_zone_name;
+      debug("Using hard-coded default zone " + default_zone_name);
     } else {
       debug("No default found");
       return null;
@@ -130,8 +131,8 @@ roon.init_services({
 function update_status() {
   if (mysettings.hasOwnProperty("zone") && mysettings.zone != null && mysettings.zone.hasOwnProperty("name")) {
     svc_status.set_status("Ready. Zone assigned: " + mysettings.zone.name, false);
-  } else if (default_zone != undefined){
-    svc_status.set_status("Ready. No zone assigned. Using default zone " + default_zone);
+  } else if (default_zone_name != undefined) {
+    svc_status.set_status("Ready. No zone assigned. Using default zone " + default_zone_name);
   } else {
     svc_status.set_status("Ready. No zone assigned.");
   }
@@ -141,7 +142,7 @@ update_status();
 roon.start_discovery();
 
 // Universal control actions
-app.get('/api/v1/zone/all/control/:action(pause)', function (req, res) {
+app.post('/api/v1/zone/all/control/:action(pause)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -152,7 +153,7 @@ app.get('/api/v1/zone/all/control/:action(pause)', function (req, res) {
 })
 
 // Zone-specific control actions
-app.get('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next|mute)', function (req, res) {
+app.post('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next|mute)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -170,7 +171,7 @@ app.get('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|n
 })
 
 // Settings
-app.get('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
+app.post('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -182,12 +183,7 @@ app.get('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', 
     } else {
       settings_object[setting_name] = 0;
     }
-    let this_zone = null;
-    if (req.params['zone'] == 'current')
-      this_zone = mysettings.zone ? mysettings.zone : default_zone;
-    else
-      this_zone = zones[req.params['zone']];
-    this_zone = getZoneByNameOrID(this_zone);
+    this_zone = getZoneByNameOrID(req.params['zone']);
     if (this_zone == null) {
       res.status('404').send();
     }
@@ -197,7 +193,7 @@ app.get('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', 
 })
 
 // Volume
-app.get('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
+app.post('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -211,15 +207,13 @@ app.get('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value'
   }
 })
 
-// Get state
-app.get('/api/v1/zone/:zone/state', function (req, res) {
+// Get zone properties
+app.get('/api/v1/zone/:zone/:prop(state|display_name)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
-    var how = req.params['how'];
-    var value = req.params['value']
     var this_zone = getZoneByNameOrID(req.params['zone']);
-    res.send(this_zone.state);
+    res.send(this_zone[req.params['prop']]);
   }
 })
 

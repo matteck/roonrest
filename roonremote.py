@@ -8,7 +8,7 @@ import requests
 import subprocess
 
 
-roon_base_url = "http://roonstation:3000/api/v1"
+roon_base_url = "http://m1:3000/api/v1"
 harmony_base_url = "http://m1:8282/hubs/harmony-hub/devices/channel-islands-audio-amp/commands"
 
 myzone = "default"
