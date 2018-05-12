@@ -19,7 +19,7 @@ function getZoneByNameOrID(arg) {
   if (arg == "default" || arg == "current") {
     if (mysettings.zone) {
       debug("Using roon settings zone " + mysettings.zone.name);
-      return mysettings.zone;
+      arg = mysettings.zone.name;
     } else if (default_zone_name) {
       arg = default_zone_name;
       debug("Using hard-coded default zone " + default_zone_name);
@@ -164,7 +164,6 @@ app.post('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|
       res.status('404').send();
     } else {
       transport.control(this_zone, action);
-      console.log('Did ' + action + ' on ' + req.params['zone']);
       res.send('OK');
     }
   }
@@ -208,12 +207,20 @@ app.post('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value
 })
 
 // Get zone properties
-app.get('/api/v1/zone/:zone/:prop(state|display_name)', function (req, res) {
+app.get('/api/v1/zone/:zone/:prop(state|name|display_name)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
     var this_zone = getZoneByNameOrID(req.params['zone']);
-    res.send(this_zone[req.params['prop']]);
+    if (this_zone == null) {
+      res.status('404').send();
+    }
+    var prop = req.params['prop']
+    if (prop == 'name' || prop == 'display_name') {
+      res.send(this_zone.display_name ? this_zone.display_name : this_zone.name);
+    } else {
+      res.send(this_zone.state);
+    }
   }
 })
 
