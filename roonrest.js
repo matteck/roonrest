@@ -76,7 +76,6 @@ var roon = new RoonApi({
         }
       }
     });
-
   },
   core_unpaired: function (core) {
     transport = undefined;
@@ -153,7 +152,7 @@ app.get('/api/v1/zone/all/control/:action(pause)', function (req, res) {
 })
 
 // Zone-specific control actions
-app.get('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next)', function (req, res) {
+app.get('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next|mute)', function (req, res) {
   if (transport == undefined) {
     res.status('503').send(not_registered_error);
   } else {
@@ -209,6 +208,18 @@ app.get('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value'
     debug('volume how is ' + how);
     transport.change_volume(this_output, how, value);
     res.send('OK');
+  }
+})
+
+// Get state
+app.get('/api/v1/zone/:zone/state', function (req, res) {
+  if (transport == undefined) {
+    res.status('503').send(not_registered_error);
+  } else {
+    var how = req.params['how'];
+    var value = req.params['value']
+    var this_zone = getZoneByNameOrID(req.params['zone']);
+    res.send(this_zone.state);
   }
 })
 
