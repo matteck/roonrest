@@ -42,7 +42,7 @@ while True:
                         url = "%s/zone/%s/control/playpause" % (roon_base_url, myzone)
                     elif code == "STOP":
                         # url = "%s/zone/all/control/pause" % roon_base_url
-                        url = "%s/zone/%s/control/stop" % (base_url, myzone)
+                        url = "%s/zone/%s/control/stop" % (roon_base_url, myzone)
                     elif code == "REWIND":
                         url = "%s/zone/%s/control/previous" % (roon_base_url, myzone)
                     elif code == "FASTFORWARD":
