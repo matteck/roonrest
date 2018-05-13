@@ -36,26 +36,23 @@ while True:
                 elif state == evdev.events.KeyEvent.key_hold:
                     state = "HOLD"
                 print(code, state)
-                method = "GET"
+                method = "POST"
                 if state == "DOWN":
                     if code == "PLAYPAUSE":
                         url = "%s/zone/%s/control/playpause" % (roon_base_url, myzone)
                     elif code == "STOP":
-                        url = "%s/zone/all/control/pause" % roon_base_url
-                        #url = "%s/zone/%s/control/stop" % (base_url, myzone)
+                        # url = "%s/zone/all/control/pause" % roon_base_url
+                        url = "%s/zone/%s/control/stop" % (base_url, myzone)
                     elif code == "REWIND":
                         url = "%s/zone/%s/control/previous" % (roon_base_url, myzone)
                     elif code == "FASTFORWARD":
                         url = "%s/zone/%s/control/next" % (roon_base_url, myzone)
                     elif code == "INFO":
-                        method = "POST"
                         url = "%s/mute" % harmony_base_url
                 if state == "HOLD" or state == "DOWN":
                     if code == "UP":
-                        method = "POST"
                         url = "%s/volume-up" % harmony_base_url
                     elif code == "DOWN":
-                        method = "POST"
                         url = "%s/volume-down" % harmony_base_url
             if url:
                 print(method, url)
