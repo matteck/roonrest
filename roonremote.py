@@ -6,10 +6,11 @@ import evdev
 import select
 import requests
 import subprocess
+from datetime import datetime
 
 
-roon_base_url = "http://m1:3000/api/v1"
-harmony_base_url = "http://m1:8282/hubs/harmony-hub/devices/channel-islands-audio-amp/commands"
+roon_base_url = "http://greenspeaker:3000/api/v1"
+harmony_base_url = "http://greenspeaker:8282/hubs/harmony-hub/devices/schiit-amp/commands"
 
 myzone = "default"
 devices = {}
@@ -19,6 +20,8 @@ for fn in evdev.list_devices():
     if dev.name.find('HBGIC') >= 0:
         devices[dev.fd] = dev
 print(devices)
+
+last_volume_change = datetime.now()
 while True:
     r, w, x = select.select(devices, [], [])
     for fd in r:
@@ -50,10 +53,23 @@ while True:
                     elif code == "INFO":
                         url = "%s/mute" % harmony_base_url
                 if state == "HOLD" or state == "DOWN":
+                    # Make sure volume doesn't change too fast
                     if code == "UP":
                         url = "%s/volume-up" % harmony_base_url
+                        if (datetime.now() - last_volume_change).total_seconds() < 0.35:
+                            print("Skipped vol change")
+                            continue
+                        else:
+                            last_volume_change = datetime.now()
+                            print("Changed volume up")
                     elif code == "DOWN":
                         url = "%s/volume-down" % harmony_base_url
+                        if (datetime.now() - last_volume_change).total_seconds() < 0.35:
+                            print("Skipped vol change")
+                            continue
+                        else:
+                            last_volume_change = datetime.now()
+                            print("Changed volume down")
             if url:
                 print(method, url)
                 try:
