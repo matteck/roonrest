@@ -56,7 +56,7 @@ while True:
                     # Make sure volume doesn't change too fast
                     if code == "UP":
                         url = "%s/volume-up" % harmony_base_url
-                        if (datetime.now() - last_volume_change).total_seconds() < 0.35:
+                        if (datetime.now() - last_volume_change).total_seconds() < 0.5:
                             print("Skipped vol change")
                             continue
                         else:
@@ -64,7 +64,7 @@ while True:
                             print("Changed volume up")
                     elif code == "DOWN":
                         url = "%s/volume-down" % harmony_base_url
-                        if (datetime.now() - last_volume_change).total_seconds() < 0.35:
+                        if (datetime.now() - last_volume_change).total_seconds() < 0.5:
                             print("Skipped vol change")
                             continue
                         else:
