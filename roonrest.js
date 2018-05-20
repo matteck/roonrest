@@ -4,7 +4,7 @@
 var debug = require('debug')('roonrest'),
   debug_verbose = require('debug')('roonrest:verbose'),
   not_registered_error = "The RoonRest extension is not enabled. Please enable it in Roon settings and try again.",
-  default_zone_name = 'Hifi',
+  default_zone_name = 'default',
   transport,
   zones = [];
 
