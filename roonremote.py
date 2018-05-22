@@ -6,13 +6,14 @@ import evdev
 import select
 import requests
 import subprocess
+import re
 from datetime import datetime
-
 
 roon_base_url = "http://greenspeaker:3000/api/v1"
 harmony_base_url = "http://greenspeaker:8282/hubs/harmony-hub/devices/schiit-amp/commands"
 
-myzone = "default"
+p = re.compile('"zone_id": "([a-z0-9]+)",\n *"display_name": "Hifi \+ 1"')
+
 devices = {}
 for fn in evdev.list_devices():
     print(fn)
@@ -29,6 +30,12 @@ while True:
             url = None
             cmd = None
             if event.type == evdev.ecodes.EV_KEY:
+                myzone = "default"
+                zones = requests.get("%s/zones" % roon_base_url).json()
+                for z in zones:
+                    if zones[z]['display_name'] == "Hifi + 1":
+                        myzone = zones[z]['zone_id']
+                        break
                 keyev = evdev.categorize(event)
                 code = keyev.keycode[4:]
                 state = keyev.keystate
