@@ -63,17 +63,17 @@ var roon = new RoonApi({
         debug('Subscribed to new core');
         zones = msg.zones.reduce((p, e) => (p[e.zone_id] = e) && p, {});
       } else if (response == "Changed") {
-        if (msg.zones_removed) {
-          debug('Removed zone', response, msg);
-          msg.zones_removed.forEach(e => delete (zones[e.zone_id]));
-        }
         if (msg.zones_added) {
           msg.zones_added.forEach(e => zones[e.zone_id] = e);
-          debug('Added zone', response, msg);
+          debug('Add zone');
         }
         if (msg.zones_changed) {
           msg.zones_changed.forEach(e => zones[e.zone_id] = e);
-          debug_verbose('Changed zone', response, msg);
+          debug('Change zone');
+        }
+        if (msg.zones_removed) {
+          debug('Remove zone');
+          msg.zones_removed.forEach(e => delete (zones[e]));
         }
       }
     });
