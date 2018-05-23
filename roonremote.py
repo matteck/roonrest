@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-#TODO: find out default zone from roonrest and set volume/mute accordingly
-
 import evdev
 import select
 import requests
@@ -10,7 +8,7 @@ import re
 from datetime import datetime
 
 roon_base_url = "http://greenspeaker:3000/api/v1"
-harmony_base_url = "http://greenspeaker:8282/hubs/harmony-hub/devices/schiit-amp/commands"
+harmony_base_url = "http://m1:8282/hubs/harmony-hub/devices/schiit-amp/commands"
 
 p = re.compile('"zone_id": "([a-z0-9]+)",\n *"display_name": "Hifi \+ 1"')
 
@@ -30,12 +28,18 @@ while True:
             url = None
             cmd = None
             if event.type == evdev.ecodes.EV_KEY:
-                myzone = "default"
+                myzone = None
                 zones = requests.get("%s/zones" % roon_base_url).json()
                 for z in zones:
                     if zones[z]['display_name'] == "Hifi + 1":
                         myzone = zones[z]['zone_id']
                         break
+                if not myzone:
+                    myzone = requests.get('http://greenspeaker:3000/api/v1/default_zone').text
+                    if myzone == "undefined":
+                        myzone = "default"
+                print("My zone is %s" % myzone)
+
                 keyev = evdev.categorize(event)
                 code = keyev.keycode[4:]
                 state = keyev.keystate
@@ -61,22 +65,28 @@ while True:
                         url = "%s/mute" % harmony_base_url
                 if state == "HOLD" or state == "DOWN":
                     # Make sure volume doesn't change too fast
-                    if code == "UP":
-                        url = "%s/volume-up" % harmony_base_url
-                        if (datetime.now() - last_volume_change).total_seconds() < 0.5:
-                            print("Skipped vol change")
-                            continue
-                        else:
-                            last_volume_change = datetime.now()
-                            print("Changed volume up")
-                    elif code == "DOWN":
-                        url = "%s/volume-down" % harmony_base_url
-                        if (datetime.now() - last_volume_change).total_seconds() < 0.5:
-                            print("Skipped vol change")
-                            continue
-                        else:
-                            last_volume_change = datetime.now()
-                            print("Changed volume down")
+                    if myzone.lower() == "greenspeaker":
+                        if code == "UP":
+                            url = "%s/zone/%s/volume/relative_step/2" % (roon_base_url, myzone)
+                        if code == "DOWN":
+                            url = "%s/zone/%s/volume/relative_step/-2" % (roon_base_url, myzone)                    
+                    else:
+                        if code == "UP":
+                            url = "%s/volume-up" % harmony_base_url
+                            if (datetime.now() - last_volume_change).total_seconds() < 0.5:
+                                print("Skipped vol change")
+                                continue
+                            else:
+                                last_volume_change = datetime.now()
+                                print("Changed volume up")
+                        elif code == "DOWN":
+                            url = "%s/volume-down" % harmony_base_url
+                            if (datetime.now() - last_volume_change).total_seconds() < 0.5:
+                                print("Skipped vol change")
+                                continue
+                            else:
+                                last_volume_change = datetime.now()
+                                print("Changed volume down")
             if url:
                 print(method, url)
                 try:

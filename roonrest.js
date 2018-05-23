@@ -69,7 +69,7 @@ var roon = new RoonApi({
         }
         if (msg.zones_changed) {
           msg.zones_changed.forEach(e => zones[e.zone_id] = e);
-          debug('Change zone');
+          debug_verbose('Change zone');
         }
         if (msg.zones_removed) {
           debug('Remove zone');
@@ -230,6 +230,10 @@ app.get('/api/v1', function (req, res) {
 
 app.get('/api/v1/zones', function (req, res) {
   res.send(JSON.stringify(zones, null, 2));
+})
+
+app.get('/api/v1/default_zone', function (req, res) {
+  res.send(mysettings.zone.name || default_zone_name || 'undefined')
 })
 
 app.listen(port, function () {
