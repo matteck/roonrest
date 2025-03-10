@@ -1,8 +1,7 @@
 [Service]
 ExecStart=/usr/bin/node /home/matt/src/roonrest
 Restart=always
-StandardOutput=/dev/null
-StandardError=syslog
+StandardOutput=null
 SyslogIdentifier=roonrest
 User=matt
 Group=matt
