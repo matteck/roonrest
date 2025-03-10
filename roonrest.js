@@ -11,12 +11,12 @@ var debug = require('debug')('roonrest'),
 // Express
 var express = require('express'),
   app = express(),
-  port = 3000;
+  port = 3030;
 
 function getZoneByNameOrID(arg) {
-  // If arg is "default" or "current" then find the best default zone
+  // If arg is "default" then find the zone matching settings or hardcoded
   debug("Looking up zone " + arg);
-  if (arg == "default" || arg == "current") {
+  if (arg == "default") {
     if (mysettings.zone) {
       debug("Using roon settings zone " + mysettings.zone.name);
       arg = mysettings.zone.name;
@@ -27,6 +27,16 @@ function getZoneByNameOrID(arg) {
       debug("No default found");
       return null;
     }
+  }
+  // If arg is "current" then find the first currently playing zone
+  if (arg == "current") {
+		for (var z in zones) {
+			if (zones[z].state=="playing") {
+        return zones[z];
+			}
+		}
+		debug("No playing zone");
+		return null;
   }
   if (arg in zones) {
     return zones[arg];
@@ -144,7 +154,7 @@ roon.start_discovery();
 // Universal control actions
 app.post('/api/v1/zone/all/control/:action(pause)', function (req, res) {
   if (transport == undefined) {
-    res.status('503').send(not_registered_error);
+    res.status(503).send(not_registered_error);
   } else {
     debug('Doing pause_all');
     transport.pause_all();
@@ -155,13 +165,13 @@ app.post('/api/v1/zone/all/control/:action(pause)', function (req, res) {
 // Zone-specific control actions
 app.post('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|next|mute)', function (req, res) {
   if (transport == undefined) {
-    res.status('503').send(not_registered_error);
+    res.status(503).send(not_registered_error);
   } else {
     var action = req.params['action'];
     debug('Doing action ' + action + ' on ' + req.params['zone'])
     var this_zone = getZoneByNameOrID(req.params['zone']);
     if (this_zone == null) {
-      res.status('404').send();
+      res.status(404).send();
     } else {
       transport.control(this_zone, action);
       res.send('OK');
@@ -172,7 +182,7 @@ app.post('/api/v1/zone/:zone/control/:action(play|pause|playpause|stop|previous|
 // Settings
 app.post('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)', function (req, res) {
   if (transport == undefined) {
-    res.status('503').send(not_registered_error);
+    res.status(503).send(not_registered_error);
   } else {
     debug('Doing set ' + req.params['name'] + ' to ' + req.params['value']);
     var settings_object = {};
@@ -184,7 +194,7 @@ app.post('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)',
     }
     this_zone = getZoneByNameOrID(req.params['zone']);
     if (this_zone == null) {
-      res.status('404').send();
+      res.status(404).send();
     }
     transport.change_settings(this_zone, settings_object);
     res.send('OK');
@@ -194,7 +204,7 @@ app.post('/api/v1/zone/:zone/settings/:name(shuffle|auto_radio)/:value(on|off)',
 // Volume
 app.post('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value', function (req, res) {
   if (transport == undefined) {
-    res.status('503').send(not_registered_error);
+    res.status(503).send(not_registered_error);
   } else {
     var how = req.params['how'];
     var value = req.params['value']
@@ -209,11 +219,12 @@ app.post('/api/v1/zone/:zone/volume/:how(absolute|relative|relative_step)/:value
 // Get zone properties
 app.get('/api/v1/zone/:zone/:prop(state|name|display_name)', function (req, res) {
   if (transport == undefined) {
-    res.status('503').send(not_registered_error);
+    res.status(503).send(not_registered_error);
   } else {
     var this_zone = getZoneByNameOrID(req.params['zone']);
     if (this_zone == null) {
-      res.status('404').send();
+      res.status(404).send();
+			return;
     }
     var prop = req.params['prop']
     if (prop == 'name' || prop == 'display_name') {
